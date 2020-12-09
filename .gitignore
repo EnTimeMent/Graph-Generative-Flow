@@ -1,0 +1,14 @@
+# folder
+.vscode/*
+data/*
+results/*
+
+# file
+*.sh
+*.pth
+*.zip
+*.mp4
+
+# else
+**/__pycache__
+*.DS_Store
