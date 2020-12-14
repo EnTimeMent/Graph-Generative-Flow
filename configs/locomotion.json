@@ -1,9 +1,9 @@
 {
     "Glow": {
         "in_channels": 3,
-        "hidden_channels": 512, 
+        "hidden_channels": 128, 
         "K": 4,
-        "L": 2,
+        "L": 3,
         "joints": 21,
         "length": 20,
         "actnorm_scale": 1.0, 

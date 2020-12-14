@@ -3,6 +3,19 @@ import torch
 import torch.nn as nn
 import numpy as np
 
+def multi_scales(data, L):
+    multi_scales_data = []
+    # multi_scales_data.append(data)
+    
+    for i in range(L):
+        N, C, T = data.shape
+        squeezed = data.view(N, C, T//2, 2)
+        squeezed = squeezed.permute(0, 1, 3, 2)
+        data = squeezed.contiguous().view(N, C*2, T//2)
+        multi_scales_data.append(data)
+        data, _ = data.chunk(2, 1)
+    return multi_scales_data
+    
 def split_feature(tensor, type="split"):
     """
     type = ["split", "cross"]
@@ -162,7 +175,7 @@ class GraphConvolution(nn.Module):
 
 class st_gcn(nn.Module):
     def __init__(self, in_channels, out_channels, kernel_size,
-                 stride=1, dropout=0.0, residual=True):
+                 stride=1, dropout=0.0, residual=True, cond_res=False):
         super().__init__()
         assert len(kernel_size) == 2
         assert kernel_size[0] % 2 == 1
@@ -189,13 +202,23 @@ class st_gcn(nn.Module):
                                                     out_channels,
                                                     kernel_size=1,
                                                     stride=(stride, 1)),
-                                          nn.BatchNorm2d(out_channels)
+                                        #   nn.BatchNorm2d(out_channels)
                                           )
         self.relu = nn.ReLU(inplace=True)
+        self.cond_res = cond_res
+        self.cond_residual = nn.Sequential(nn.Conv1d(in_channels,
+                                                    out_channels,
+                                                    kernel_size=1,
+                                                    stride=stride),
+                                        #   nn.BatchNorm1d(out_channels)
+                                          )
     
-    def forward(self, x, A):
+    def forward(self, x, cond, A):
         res = self.residual(x)
         x = self.gcn(x, A)
         x = self.tcn(x) + res
-
+        
+        if self.cond_res:
+            cond_res = self.cond_residual(cond).unsqueeze(-1).repeat(1, 1, 1, 21)
+            x = x + cond_res
         return self.relu(x)

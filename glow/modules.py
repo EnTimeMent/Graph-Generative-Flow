@@ -179,11 +179,13 @@ class AffineCoupling(nn.Module):
                            layout=layout,
                            graph_scale=graph_scale)
 
-    def forward(self, x, logdet=None, reverse=False):
+    def forward(self, x, cond, logdet=None, reverse=False):
         if not reverse:
+            cond1, cond2 = split_feature(cond, 'split')
+
             # step 1
             x1, x2 = split_feature(x, 'split')
-            h = self.net(x1)
+            h = self.net(x1, cond1)
             shift, scale = split_feature(h, "cross")
             scale = torch.sigmoid(scale + 2.) + 1e-6
             x2 = (x2 + shift) * scale
@@ -191,7 +193,7 @@ class AffineCoupling(nn.Module):
             
             # step 2
             # x1, x2 = split_feature(y, 'split')
-            h = self.net(x2)
+            h = self.net(x2, cond2)
             shift, scale = split_feature(h, "cross")
             scale = torch.sigmoid(scale + 2.) + 1e-6
             x1 = (x1 + shift) * scale
@@ -201,9 +203,11 @@ class AffineCoupling(nn.Module):
             return y, logdet
         
         else:
+            cond1, cond2 = split_feature(cond, 'split')
+            
             # step 1
             x1, x2 = split_feature(x, "split")
-            h = self.net(x2)
+            h = self.net(x2, cond2)
             shift, scale = split_feature(h, "cross")
             scale = torch.sigmoid(scale + 2.) + 1e-6
             x1 = x1 / scale - shift
@@ -211,7 +215,7 @@ class AffineCoupling(nn.Module):
             
             # step 2
             # x1, x2 = split_feature(x, "split")
-            h = self.net(x1)
+            h = self.net(x1, cond1)
             shift, scale = split_feature(h, "cross")
             scale = torch.sigmoid(scale + 2.) + 1e-6
             x2 = x2 / scale - shift

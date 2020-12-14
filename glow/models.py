@@ -5,7 +5,7 @@ import math
 import numpy as np
 from tqdm import tqdm
 from .modules import ActNorm, InvertibleConv1x1, Permute, AffineCoupling
-from .utils import Conv2dZeros, split_feature
+from .utils import Conv2dZeros, split_feature, multi_scales
 
 class FlowStep(nn.Module):
     def __init__(self, num_in_channels, 
@@ -34,16 +34,16 @@ class FlowStep(nn.Module):
                                               layout=layout,
                                               affine=True)
 
-    def forward(self, x, logdet=None, reverse=False):
+    def forward(self, x, cond, logdet=None, reverse=False):
         if not reverse:
             out, logdet = self.actnorm(x, logdet)
             out, logdet = self.invconv(out, logdet)
-            out, logdet = self.affine_coupling(out, logdet)
+            out, logdet = self.affine_coupling(out, cond, logdet)
             return out, logdet
         else:
-            out = self.affine_coupling(x, reverse=reverse)
+            out = self.affine_coupling(x, cond, reverse=reverse)
             out = self.invconv(out, reverse=reverse)
-            out = self.actnorm(out, reverse=reverse)
+            out = self.actnorm(out, cond, reverse=reverse)
             return out
 
 
@@ -79,14 +79,20 @@ class Block(nn.Module):
             self.prior = Conv2dZeros(in_channels*2, in_channels*4)
         
             
-    def forward(self, x, z=None, logdet=None, reverse=False):
+    def forward(self, x, cond, z=None, logdet=None, reverse=False):
         if not reverse:
             N, C, V, T = x.shape
             squeezed = x.view(N, C, V, T//2, 2)
             squeezed = squeezed.permute(0, 1, 4, 2, 3)
             x = squeezed.contiguous().view(N, C*2, V, T//2)
+
+            # N, C_cond, T = cond.shape
+            # squeezed = cond.view(N, C_cond, T//2, 2)
+            # squeezed = squeezed.permute(0, 1, 3, 2)
+            # cond = squeezed.contiguous().view(N, C_cond*2, T//2)            
+
             for flow in self.flows:
-                x, logdet = flow(x, logdet)                   
+                x, logdet = flow(x, cond, logdet)                   
                 z = x
             
             if self.split:
@@ -107,7 +113,7 @@ class Block(nn.Module):
                 x = z
             
             for flow in self.flows[::-1]:
-                x = flow(x, reverse=reverse)
+                x = flow(x, cond, reverse=reverse)
             
             N, C, V, T = x.shape
             unsqueezed = x.view(N, C//2, 2, V, T)
@@ -156,13 +162,14 @@ class Glow(nn.Module):
                           LU_decomposed=cfg.Glow.LU_decomposed)
             self.blocks.append(block)
     
-    def forward(self, x, logdet=None, reverse=False):
+    def forward(self, x, cond, logdet=None, reverse=False):
         if not reverse:
+            conds = multi_scales(cond, self.L)
             zs = []
             logp_sum = 0
             logdet_sum = 0
-            for block in self.blocks:
-                logdet, logp, x, z = block(x, logdet)
+            for i, block in enumerate(self.blocks):
+                logdet, logp, x, z = block(x, conds[i], logdet=logdet)
                 zs.append(z)
                 logdet_sum = logdet_sum + logdet
                 
@@ -175,11 +182,12 @@ class Glow(nn.Module):
             return logp_sum, logdet_sum, zs, loss
         else:
             with torch.no_grad():
+                conds = multi_scales(cond, self.L)
                 for i, block in enumerate(self.blocks[::-1]):
                     if i == 0:
-                        y = block(x[-1], x[-1], reverse=reverse)
+                        y = block(x=x[-1], cond=conds[-1], z=x[-1], reverse=reverse)
                     else:
-                        y = block(y, x[-(i+1)], reverse=reverse)
+                        y = block(x=y, cond=conds[-(i+1)], z=x[-(i+1)], reverse=reverse)
             return y
 
     def negative_log_likelihood(self, logdet, logp):

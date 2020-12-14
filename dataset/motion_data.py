@@ -17,7 +17,8 @@ class MotionDataset(Dataset):
 
         self.joints = self.create_samples(joints).transpose(1, 2, 3, 4, 0)
         self.controls = self.create_samples(controls).transpose(1, 2, 3, 0)
-
+        print('')
+        
     def create_samples(self, data):
         samples = []
         i = 0
@@ -27,7 +28,7 @@ class MotionDataset(Dataset):
             i = i + self.overlap
         samples = np.array(samples)
         return samples
-
+    
     def __len__(self):
         return self.num_sequence
     
@@ -37,4 +38,3 @@ class MotionDataset(Dataset):
             'controls': self.controls[idx, ...]
         }
         return sample
-        

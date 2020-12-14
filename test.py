@@ -18,8 +18,7 @@ if __name__ == "__main__":
     # AC = ActNorm(num_channels=3, scale=1)
     # IC = InvertibleConv1x1(3)
     # ST = AffineCoupling(in_channels=3, hidden_size=512)
-    a = np.random.random_integers(0, 10, size=(2, 6, 3))
-    print('')
+
     # y1, logdet = AC(x0)
     # y2, logdet = IC(y1, logdet)
     # y3, logdet = ST(y2, logdet)
@@ -41,11 +40,20 @@ if __name__ == "__main__":
     # x1 = B(out, z, reverse=True)
     
     # test glows
-    # x0 = torch.randn([1, 3, 21, 20])   
-    # args = parser.parse_args()
-    # cfg = JsonConfig(args.cfg)
-    # model = Glow(cfg)
-    # logp, logdet, z, loss = model(x0)
+    x0 = torch.randn([1, 3, 21, 16])
+    cond0 = torch.randn([1, 3, 16])
+    args = parser.parse_args()
+    cfg = JsonConfig(args.cfg)
+    model = Glow(cfg)
+    logp, logdet, z, loss = model(x0, cond0)
     
-    # y = model(z, reverse=True)
+    y = model(z, cond0, reverse=True)
     print('')
+
+    
+            # N, C_cond, T = cond.shape
+            # squeezed = cond.view(N, C_cond, T//2, 2)
+            # squeezed = squeezed.permute(0, 1, 3, 2)
+            # cond = squeezed.contiguous().view(N, C_cond*2, T//2)
+    
+    

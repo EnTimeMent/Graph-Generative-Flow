@@ -25,7 +25,7 @@ class STGCN(nn.Module):
         kernel_size = (temporal_kernel_size, spatial_kernel_size)
         
         self.gcn_networks = nn.ModuleList((
-            st_gcn(input_dim, hidden_dim, kernel_size),
+            st_gcn(input_dim, hidden_dim, kernel_size, cond_res=True),
             st_gcn(hidden_dim, hidden_dim, kernel_size)
         ))
     
@@ -38,15 +38,22 @@ class STGCN(nn.Module):
             self.edge_importance = [1] * len(self.gcn_networks)
             
         self.fcn = Conv2dZeros(hidden_dim, output_dim)
-    
-    def forward(self, x):
+        
+    def forward(self, x, cond):
         
         N, C, V, T = x.size() # input x: N, C, V, T
         x = x.permute(0, 1, 3, 2).contiguous() # N, C, T, V
 
         for gcn, importance in zip(self.gcn_networks, self.edge_importance):
-            x = gcn(x, self.A * importance)
+            x = gcn(x, cond, self.A * importance)
 
         y = self.fcn(x).permute(0, 1, 3, 2)
         
         return y
+    
+class LSTM(nn.Module):
+    def __init__(self):
+        super(LSTM, self).__init__()
+    
+    def init_hidden(self):
+        self.do_init = True
