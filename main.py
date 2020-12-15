@@ -34,3 +34,5 @@ if __name__ == "__main__":
     scheduler = get_schedule[cfg.Schedule.name]
     
     data = Locomotion(cfg)
+    train_data = data.train_dataset
+    

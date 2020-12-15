@@ -10,6 +10,7 @@ parser.add_argument("--cfg", default='configs/locomotion.json', type=str, help="
 
 from numpy.lib.stride_tricks import as_strided
 import numpy as np
+from glow.nets import LSTM
 
 if __name__ == "__main__":
     # test each module works 
@@ -45,15 +46,25 @@ if __name__ == "__main__":
     args = parser.parse_args()
     cfg = JsonConfig(args.cfg)
     model = Glow(cfg)
-    logp, logdet, z, loss = model(x0, cond0)
+    logp, logdet, zs, loss = model(x0, cond0)
     
-    y = model(z, cond0, reverse=True)
+    y = model(zs, cond0, reverse=True)
     print('')
-
-    
-            # N, C_cond, T = cond.shape
-            # squeezed = cond.view(N, C_cond, T//2, 2)
-            # squeezed = squeezed.permute(0, 1, 3, 2)
-            # cond = squeezed.contiguous().view(N, C_cond*2, T//2)
     
     
+    # test sample
+    x1 = torch.randn([1, 3, 21, 16])
+    z_shape = x1.shape
+    z = torch.normal(mean=torch.rand(z_shape),
+                           std=torch.rand(z_shape) * 1)
+    
+    print('')
+    
+    # test LSTM
+    # x0 = torch.randn([1, 3, 21, 16])
+    lstm =  LSTM(3, 21, 3, 3)
+    lstm.init_hidden()
+    zss = lstm(zs)
+    zsss = lstm(zss)
+    
+    print('')

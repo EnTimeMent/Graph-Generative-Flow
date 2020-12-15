@@ -2,7 +2,7 @@ import numpy as np
 import torch
 import torch.nn as nn
 
-from .utils import Conv2dZeros, Graph, st_gcn
+from .utils import Conv2dZeros, Graph, st_gcn, split_feature
 
 class STGCN(nn.Module):
     def __init__(self, input_dim, hidden_dim, output_dim, 
@@ -52,8 +52,48 @@ class STGCN(nn.Module):
         return y
     
 class LSTM(nn.Module):
-    def __init__(self):
+    def __init__(self, num_channels, num_joints, hidden_dim, L, num_layers=2):
         super(LSTM, self).__init__()
-    
+        self.num_channels = num_channels
+        self.num_joints = num_joints
+        self.hidden_dim = hidden_dim
+        self.L = L
+        
+        self.LSTMs = []
+        lstm_dim = num_channels * num_joints
+        for l in range(L-1):
+            self.lstm = nn.LSTM(lstm_dim, lstm_dim*2, num_layers, batch_first=True)
+            self.LSTMs.append(self.lstm)
+
+        self.lstm = nn.LSTM(lstm_dim*2, lstm_dim*4, num_layers, batch_first=True)
+        self.LSTMs.append(self.lstm)    
+
     def init_hidden(self):
         self.do_init = True
+        self.hiddens = []
+    
+    def prior(self, x):
+        mean, logs = split_feature(x, "split")
+        return mean, logs 
+
+    def forward(self, xs):
+        zs = []
+
+        for i in range(self.L):
+            x = xs[i]
+            B, C, V, T = x.shape
+            x = x.permute(0, 3, 1, 2).view(B, T, C*V).contiguous()
+            if self.do_init:
+                lstm_out, hidden = self.LSTMs[i](x)
+            else:
+                lstm_out, hidden = self.LSTMs[i](x, self.hiddens[i])
+            lstm_out = lstm_out.view(B, T, 2*C, V).permute(0, 2, 3, 1)
+            self.hiddens.append(hidden)
+
+            mean, logs = self.prior(lstm_out)
+            z = torch.normal(mean=mean, std=logs)
+            zs.append(z)
+
+        self.do_init = False
+        return zs
+        
