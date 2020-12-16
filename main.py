@@ -10,6 +10,7 @@ from configs.utils import JsonConfig
 from glow.models import Glow
 from glow.optimizer import get_optim
 from glow.scheduler import get_schedule
+from glow.trainer import Trainer
 from dataset.locomotion import Locomotion
 
 parser = argparse.ArgumentParser(description="Graph-Glow trainer")
@@ -34,5 +35,12 @@ if __name__ == "__main__":
     scheduler = get_schedule[cfg.Schedule.name]
     
     data = Locomotion(cfg)
-    train_data = data.train_dataset
-    
+    trainer = Trainer(model=model,
+                      optim=optimizer,
+                      schedule=scheduler,
+                      data=data,
+                      logdir=log_dir,
+                      device=device,
+                      cfg=cfg)
+
+    trainer.train()

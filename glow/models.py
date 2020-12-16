@@ -5,6 +5,7 @@ import math
 import numpy as np
 from tqdm import tqdm
 from .modules import ActNorm, InvertibleConv1x1, Permute, AffineCoupling
+from .nets import Multi_LSTMs
 from .utils import Conv2dZeros, split_feature, multi_scales
 
 class FlowStep(nn.Module):
@@ -146,7 +147,11 @@ class Glow(nn.Module):
         
         self.blocks = nn.ModuleList()
         self.in_channels = cfg.Glow.in_channels
-
+        self.multi_lstms = Multi_LSTMs(num_channels=self.in_channels,
+                                       num_joints=21,
+                                       L=self.L,
+                                       num_layers=2)
+        
         for i in range(self.L):
             split = i < (self.L - 1)
             block = Block(in_channels=self.in_channels,
@@ -161,6 +166,22 @@ class Glow(nn.Module):
                           layout=cfg.Glow.layout,
                           LU_decomposed=cfg.Glow.LU_decomposed)
             self.blocks.append(block)
+    
+    def prior(self, zs_history):
+        # self.multi_lstms()
+        length = len(zs_history)
+        L = len(zs_history[0])
+        zs_pred = []
+
+        # for i_level in range(L):
+        #     sequence = []
+        #     for i_step in range(length):
+        #         sequence.append(zs_history[i_step][i_level])
+            
+        zs = zs_history[-1]
+        zs_pred, normals = self.multi_lstms(zs)
+        
+        return zs_pred, normals
     
     def forward(self, x, cond, logdet=None, reverse=False):
         if not reverse:
@@ -177,9 +198,11 @@ class Glow(nn.Module):
                     logp_sum = logp_sum + logp
             
             nll = self.negative_log_likelihood(logdet, logp_sum)
-            loss = self.generative_loss(nll)
+            glow_loss = self.generative_loss(nll)
             
-            return logp_sum, logdet_sum, zs, loss
+            # zs_pred, normals = self.multi_lstms(zs)
+
+            return logp_sum, logdet_sum, zs , glow_loss
         else:
             with torch.no_grad():
                 conds = multi_scales(cond, self.L)
@@ -196,7 +219,16 @@ class Glow(nn.Module):
         objective = logdet + logp
         
         nll = (-objective) / float(np.log(2.0) * logdet_factor)
-        return nll    
+        return nll
 
     def generative_loss(self, nll):
         return torch.mean(nll)
+    
+    def nn_loss(self, normals, zs):
+        L = len(normals)
+        sum_loss = 0
+        for i in range(L):
+            loss = normals[i].log_prob(zs[i])
+            sum_loss += torch.mean(loss)
+        
+        return -sum_loss

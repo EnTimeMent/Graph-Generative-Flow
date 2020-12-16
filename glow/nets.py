@@ -1,7 +1,7 @@
 import numpy as np
 import torch
 import torch.nn as nn
-
+from torch.distributions.normal import Normal
 from .utils import Conv2dZeros, Graph, st_gcn, split_feature
 
 class STGCN(nn.Module):
@@ -51,15 +51,14 @@ class STGCN(nn.Module):
         
         return y
     
-class LSTM(nn.Module):
-    def __init__(self, num_channels, num_joints, hidden_dim, L, num_layers=2):
-        super(LSTM, self).__init__()
+class Multi_LSTMs(nn.Module):
+    def __init__(self, num_channels, num_joints, L, num_layers=2):
+        super(Multi_LSTMs, self).__init__()
         self.num_channels = num_channels
         self.num_joints = num_joints
-        self.hidden_dim = hidden_dim
         self.L = L
         
-        self.LSTMs = []
+        self.LSTMs = nn.ModuleList()
         lstm_dim = num_channels * num_joints
         for l in range(L-1):
             self.lstm = nn.LSTM(lstm_dim, lstm_dim*2, num_layers, batch_first=True)
@@ -73,11 +72,12 @@ class LSTM(nn.Module):
         self.hiddens = []
     
     def prior(self, x):
-        mean, logs = split_feature(x, "split")
+        mean, logs = split_feature(x.detach(), "split")
         return mean, logs 
 
     def forward(self, xs):
         zs = []
+        normals = []
 
         for i in range(self.L):
             x = xs[i]
@@ -91,9 +91,12 @@ class LSTM(nn.Module):
             self.hiddens.append(hidden)
 
             mean, logs = self.prior(lstm_out)
-            z = torch.normal(mean=mean, std=logs)
+            # z = torch.normal(mean=mean, std=torch.exp(logs))
+            normal = Normal(loc=mean, scale=torch.exp(logs))
+            z = normal.sample()
             zs.append(z)
+            normals.append(normal)
 
         self.do_init = False
-        return zs
+        return zs, normals
         
