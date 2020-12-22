@@ -5,6 +5,7 @@ import torch
 import datetime
 
 from tqdm import tqdm
+from torch import nn
 from configs.utils import JsonConfig
 
 from glow.models import Glow
@@ -31,6 +32,8 @@ if __name__ == "__main__":
         os.makedirs(log_dir)
     
     model = Glow(cfg).to(device)
+    model = nn.DataParallel(model)
+    
     optimizer = get_optim[cfg.Optim.name](model.parameters(), cfg)  
     scheduler = get_schedule[cfg.Schedule.name]
     

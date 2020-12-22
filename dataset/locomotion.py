@@ -115,4 +115,4 @@ class Locomotion():
         
         self.train_dataset = MotionDataset(train_data, cfg.Data.seqlen, cfg.Data.overlap)
         self.validation_dataset = MotionDataset(validation_data, cfg.Data.seqlen, cfg.Data.overlap)
-        
+        self.test_dataset = MotionDataset(test_data, cfg.Data.seqlen, cfg.Data.overlap)

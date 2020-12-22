@@ -91,13 +91,13 @@ class Trainer(object):
                                         
                     if i_step == 0:
                         zs_history.append(zs)
-                        self.model.multi_lstms.init_hidden()
+                        self.model.module.multi_lstms.init_hidden()
                         continue
                     
-                    zs_pred, normals = self.model.prior(zs_history)
+                    zs_pred, normals = self.model.module.prior(zs_history)
                     zs_history.append(zs)
                     
-                    nn_loss = self.model.nn_loss(normals, zs)
+                    nn_loss = self.model.module.nn_loss(normals, zs)
                     total_loss = glow_loss + nn_loss
 
                     glow_loss_sequence += glow_loss
@@ -139,6 +139,44 @@ class Trainer(object):
                     torch.save(state, save_path)
 
                 # validation
+                if self.global_step % self.validation_log_gaps == 0:    
+                    loss_val = 0
+                    n_batches = 0
+                    
+                    self.model.eval() 
+            
+                    for i_val_batch, val_batch in enumerate(self.val_data_loader):
+                        
+                        # get batch data
+                        x = val_batch["joints"].permute(4, 0, 1, 2, 3).to(self.device)
+                        c = val_batch["controls"].permute(3, 0, 1, 2).to(self.device)
+
+                        zs_history = []
+                        
+                        for i_step in range(len(x)): 
+                            with torch.no_grad():
+                                
+                                _, _, zs, glow_loss = self.model(x[i_step], c[i_step])
+                                if i_step == 0:
+                                    zs_history.append(zs)
+                                    self.model.module.multi_lstms.init_hidden()
+                                    continue
+                                
+                                zs_pred, normals = self.model.module.prior(zs_history)
+                                zs_history.append(zs)
+                                nn_loss = self.model.module.nn_loss(normals, zs)
+                                total_loss = glow_loss + nn_loss
+                                loss_val += (total_loss / len(x))
+                                           
+                        n_batches += 1
+                    loss_val /= n_batches  
+                    self.writer.add_scalar("val_loss", loss_val, self.global_step)
+
+                # test samples generation
+                if self.global_step % self.test_log_gaps == 0:
+                    self.model.eval()
+                    
+                                        
 
                 self.global_step += 1 
                 
