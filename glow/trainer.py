@@ -85,12 +85,12 @@ class Trainer(object):
                     self.writer.add_scalar("lr/lr", lr, self.global_step)
 
                 # get batch data
-                x = batch["joints"].permute(4, 0, 1, 2, 3).to(self.device)
-                c = batch["controls"].permute(3, 0, 1, 2).to(self.device)
+                x = batch["joints"].to(self.device)
+                c = batch["controls"].to(self.device)
              
                 # at first time, initialize ActNorm
                 if self.global_step == 0:
-                    _, _, zs, loss = self.model(x[0], c[0])
+                    _, _, zs, loss = self.model(x[..., 0], c[..., 0])
                     self.global_step += 1                    
                                 
                 glow_loss_sequence = 0
@@ -98,9 +98,9 @@ class Trainer(object):
                 total_loss_sequence = 0
                 zs_history = []
                 
-                for i_step in range(len(x)): 
+                for i_step in range(x.shape[-1]): 
                     # forward phase
-                    _, _, zs, glow_loss = self.model(x[i_step], c[i_step])
+                    _, _, zs, glow_loss = self.model(x[..., i_step], c[..., i_step])
                                         
                     if i_step == 0:
                         zs_history.append(zs)
@@ -135,7 +135,7 @@ class Trainer(object):
                     self.optim.step()
 
                 # loss
-                total_loss_sequence /= len(x)
+                total_loss_sequence /= x.shape[-1]
                 if self.global_step % self.scalar_log_gaps == 0:
                     self.writer.add_scalar("total_loss", total_loss_sequence, self.global_step)
                 
@@ -161,15 +161,15 @@ class Trainer(object):
                     for i_val_batch, val_batch in enumerate(self.val_data_loader):
                         
                         # get batch data
-                        x = val_batch["joints"].permute(4, 0, 1, 2, 3).to(self.device)
-                        c = val_batch["controls"].permute(3, 0, 1, 2).to(self.device)
+                        x = val_batch["joints"].to(self.device)
+                        c = val_batch["controls"].to(self.device)
 
                         zs_history = []
                         
-                        for i_step in range(len(x)): 
+                        for i_step in range(x.shape[-1]): 
                             with torch.no_grad():
                                 
-                                _, _, zs, glow_loss = self.model(x[i_step], c[i_step])
+                                _, _, zs, glow_loss = self.model(x[..., i_step], c[..., i_step])
                                 if i_step == 0:
                                     zs_history.append(zs)
                                     self.model.module.multi_lstms.init_hidden()
