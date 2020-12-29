@@ -5,9 +5,22 @@ import torch
 from torch.utils.data import DataLoader
 from tensorboardX import SummaryWriter
 
+def calc_z_shapes(n_channel, t_size, n_block):
+    z_shapes = []
+
+    for i in range(n_block - 1):
+        t_size //= 2
+        z_shapes.append((n_channel, 21, t_size))
+
+    t_size //= 2
+    z_shapes.append((n_channel * 2, 21, t_size))
+
+    return z_shapes
+
 class Trainer(object):
     def __init__(self, model, optim, schedule, data, logdir, device, cfg):
-
+        
+        self.cfg = cfg
         self.log_dir = logdir
         self.checkpoints_dir = os.path.join(self.log_dir, "checkpoints")
         self.plot_dir = os.path.join(self.log_dir, "plots")
@@ -174,10 +187,13 @@ class Trainer(object):
 
                 # test samples generation
                 if self.global_step % self.test_log_gaps == 0:
-                    self.model.eval()
-                    
-                                        
+                    z_sample = []
+                    z_shapes = calc_z_shapes(3, self.cfg.Data.seqlen, self.cfg.Glow.L)
 
+                    for z in z_shapes:
+                        z_new = torch.randn(1, *z)
+                        z_sample.append(z_new.to(self.device))
+                                        
                 self.global_step += 1 
                 
             
