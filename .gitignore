@@ -8,6 +8,7 @@ results/*
 *.pth
 *.zip
 *.mp4
+*.log
 
 # else
 **/__pycache__
