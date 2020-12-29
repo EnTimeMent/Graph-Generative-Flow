@@ -39,7 +39,7 @@
     },
 
     "Train": {
-        "batch_size": 64,
+        "batch_size": 100,
         "num_epochs": 10000,
         "log": "results/locomotion",
         "check_gap": 1,
