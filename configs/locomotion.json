@@ -40,14 +40,14 @@
 
     "Train": {
         "batch_size": 100,
-        "num_epochs": 10000,
+        "num_epochs": 500,
         "log": "results/locomotion",
         "check_gap": 1000,
         "max_grad_clip": 5,
         "max_grad_norm": 100,
         "num_workers": 4,
         "scalar_log_gap": 50,
-        "validation_log_gap": 1000,
-        "test_log_gap": 1000
+        "validation_log_gap": 50,
+        "test_log_gap": 200
     }
 }
