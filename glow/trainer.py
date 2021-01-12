@@ -5,6 +5,9 @@ import torch
 from torch.utils.data import DataLoader
 from tensorboardX import SummaryWriter
 
+from dataset.locomotion import inv_standardize
+from dataset.utils import plot_animation
+
 def calc_z_shapes(n_channel, t_size, n_block):
     z_shapes = []
 
@@ -157,55 +160,63 @@ class Trainer(object):
                     torch.save(state, save_path)
 
                 # validation
-                # if self.global_step % self.validation_log_gaps == 0:    
-                #     loss_val = 0
-                #     n_batches = 0
+                if self.global_step % self.validation_log_gaps == 0:    
+                    loss_val = 0
+                    n_batches = 0
                     
-                #     self.model.eval() 
+                    self.model.eval() 
             
-                #     for i_val_batch, val_batch in enumerate(self.val_data_loader):
+                    for i_val_batch, val_batch in enumerate(self.val_data_loader):
                         
-                #         # get batch data
-                #         x = val_batch["joints"].to(self.device)
-                #         c = val_batch["controls"].to(self.device)
+                        # get batch data
+                        x = val_batch["joints"].to(self.device)
+                        c = val_batch["controls"].to(self.device)
 
-                #         zs_history = []
+                        zs_history = []
                         
-                #         for i_step in range(x.shape[-1]): 
-                #             with torch.no_grad():
+                        for i_step in range(x.shape[-1]): 
+                            with torch.no_grad():
+                                _, _, zs, glow_loss = self.model(x[..., i_step], c[..., i_step])
+                                if i_step == 0:
+                                    zs_history.append(zs)
+                                    # self.model.module.multi_lstms.init_hidden()
+                                    continue
                                 
-                #                 _, _, zs, glow_loss = self.model(x[..., i_step], c[..., i_step])
-                #                 if i_step == 0:
-                #                     zs_history.append(zs)
-                #                     self.model.module.multi_lstms.init_hidden()
-                #                     continue
+                                # zs_pred, normals = self.model.module.prior(zs_history)
+                                zs_history.append(zs)
                                 
-                #                 zs_pred, normals = self.model.module.prior(zs_history)
-                #                 zs_history.append(zs)
-                #                 nn_loss = self.model.module.nn_loss(normals, zs)
-                #                 total_loss = glow_loss + nn_loss
-                #                 loss_val += (total_loss / len(x))
+                                # nn_loss = self.model.module.nn_loss(normals, zs)
+                                # total_loss = glow_loss + nn_loss
+                                # loss_val += (total_loss / len(x))
+                                loss_val += (glow_loss / len(x))
                                            
-                #         n_batches += 1
-                #     loss_val /= n_batches  
-                #     self.writer.add_scalar("val_loss", loss_val, self.global_step)
+                        n_batches += 1
+                    loss_val /= n_batches  
+                    self.writer.add_scalar("val_loss", loss_val, self.global_step)
 
-                # # test samples generation
-                # if self.global_step % self.test_log_gaps == 0:
-                #     z_sample = []
-                #     z_shapes = calc_z_shapes(3, self.cfg.Data.seqlen, self.cfg.Glow.L)
+                # test samples generation
+                if self.global_step % self.test_log_gaps == 0:
+                    z_sample = []
+                    z_shapes = calc_z_shapes(3, self.cfg.Data.seqlen, self.cfg.Glow.L)
 
-                #     for z in z_shapes:
-                #         z_new = torch.randn(1, *z)
-                #         z_sample.append(z_new.to(self.device))
+                    for z in z_shapes:
+                        z_new = torch.randn(1, *z)
+                        z_sample.append(z_new.to(self.device))
                     
-                #     test_batch = next(iter(self.test_data_loader))
-                #     c = test_batch["controls"].to(self.device)
-                #     c_sample = c[..., 0]
-                #     self.model.module.multi_lstms.init_hidden()
-                #     y = self.model(z_sample, c_sample, reverse=True)
+                    test_batch = next(iter(self.test_data_loader))
+                    c = test_batch["controls"].to(self.device)
+                    c_sample = c[..., 0]
+                    # self.model.module.multi_lstms.init_hidden()
+                    y = self.model(z_sample, c_sample, reverse=True)
                     
-                                        
+                    clip = torch.cat((y, c_sample.unsqueeze(2)), 2).permute(0, 3, 1, 2).cpu().numpy()
+                    clip = clip.reshape(clip.shape[0], clip.shape[1], clip.shape[2]*clip.shape[3])
+                    clip = inv_standardize(clip, self.data.scaler)
+                    
+                    _clip_name = "test_{}.mp4".format(int(self.global_step))
+                    clip_path = os.path.join(self.plot_dir, _clip_name)  
+                    plot_animation(clip[0], self.data.parents, clip_path, self.data.frame_rate, axis_scale=60)                        
+                    
                 self.global_step += 1 
                 
             
