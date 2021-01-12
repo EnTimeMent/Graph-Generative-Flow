@@ -25,7 +25,9 @@ Conda install
 ```shell
 # Conda install
 conda install pytorch==1.6.0 torchvision==0.7.0 cudatoolkit=10.2 -c pytorch -y
-conda install -c conda-forge tqdm matplotlib tensorboardx -y
+conda install -c conda-forge tqdm matplotlib -y
 conda install -c anaconda scikit-learn scipy -y
 ```
 pip install -U protobuf
+pip install tensorflow==1.15
+pip install tensorboardX

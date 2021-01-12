@@ -48,6 +48,7 @@ class Trainer(object):
         self.data = data
         self.train_dataset = data.train_dataset
         self.val_dataset = data.validation_dataset
+        self.test_dataset = data.test_dataset
 
         self.train_data_loader = DataLoader(self.train_dataset,
                                       batch_size=self.batch_size,
@@ -58,6 +59,10 @@ class Trainer(object):
                                           batch_size=self.batch_size,
                                           num_workers=cfg.Train.num_workers,
                                           drop_last=True)
+        self.test_data_loader = DataLoader(self.test_dataset,
+                                            batch_size=1,
+                                            num_workers=cfg.Train.num_workers,
+                                            drop_last=False)
 
         self.writer = SummaryWriter(log_dir=self.log_dir)
         self.scalar_log_gaps = cfg.Train.scalar_log_gap
@@ -104,40 +109,40 @@ class Trainer(object):
                                         
                     if i_step == 0:
                         zs_history.append(zs)
-                        self.model.module.multi_lstms.init_hidden()
+                        # self.model.module.multi_lstms.init_hidden()
                         continue
                     
-                    zs_pred, normals = self.model.module.prior(zs_history)
+                    # zs_pred, normals = self.model.module.prior(zs_history)
                     zs_history.append(zs)
                     
-                    nn_loss = self.model.module.nn_loss(normals, zs)
-                    total_loss = glow_loss + nn_loss
+                    # nn_loss = self.model.module.nn_loss(normals, zs)
+                    # total_loss = glow_loss + nn_loss
 
                     glow_loss_sequence += glow_loss
-                    nn_loss_sequence += nn_loss
-                    total_loss_sequence += total_loss
+                    # nn_loss_sequence += nn_loss
+                    # total_loss_sequence += total_loss
 
                     # backward
                     self.model.zero_grad()
                     self.optim.zero_grad()
                                         
-                    total_loss.backward()
-                    
+                    glow_loss.backward()
+                     
                     # operate grad
                     if self.max_grad_clip is not None and self.max_grad_clip > 0:
                         torch.nn.utils.clip_grad_value_(self.model.parameters(), self.max_grad_clip)
                     if self.max_grad_norm is not None and self.max_grad_norm > 0:
                         grad_norm = torch.nn.utils.clip_grad_norm_(self.model.parameters(), self.max_grad_norm)
-                        if self.global_step % self.scalar_log_gaps == 0:
-                            self.writer.add_scalar("grad_norm", grad_norm, self.global_step)
+                        # if self.global_step % self.scalar_log_gaps == 0:
+                        #     self.writer.add_scalar("grad_norm", grad_norm, self.global_step)
                     
                     # step
                     self.optim.step()
 
                 # loss
-                total_loss_sequence /= x.shape[-1]
+                glow_loss_sequence /= x.shape[-1]
                 if self.global_step % self.scalar_log_gaps == 0:
-                    self.writer.add_scalar("total_loss", total_loss_sequence, self.global_step)
+                    self.writer.add_scalar("glow_loss", glow_loss_sequence, self.global_step)
                 
                 # save checkpoints
                 if self.global_step % self.checkpoints_gap == 0 and self.global_step > 0:
@@ -152,47 +157,54 @@ class Trainer(object):
                     torch.save(state, save_path)
 
                 # validation
-                if self.global_step % self.validation_log_gaps == 0:    
-                    loss_val = 0
-                    n_batches = 0
+                # if self.global_step % self.validation_log_gaps == 0:    
+                #     loss_val = 0
+                #     n_batches = 0
                     
-                    self.model.eval() 
+                #     self.model.eval() 
             
-                    for i_val_batch, val_batch in enumerate(self.val_data_loader):
+                #     for i_val_batch, val_batch in enumerate(self.val_data_loader):
                         
-                        # get batch data
-                        x = val_batch["joints"].to(self.device)
-                        c = val_batch["controls"].to(self.device)
+                #         # get batch data
+                #         x = val_batch["joints"].to(self.device)
+                #         c = val_batch["controls"].to(self.device)
 
-                        zs_history = []
+                #         zs_history = []
                         
-                        for i_step in range(x.shape[-1]): 
-                            with torch.no_grad():
+                #         for i_step in range(x.shape[-1]): 
+                #             with torch.no_grad():
                                 
-                                _, _, zs, glow_loss = self.model(x[..., i_step], c[..., i_step])
-                                if i_step == 0:
-                                    zs_history.append(zs)
-                                    self.model.module.multi_lstms.init_hidden()
-                                    continue
+                #                 _, _, zs, glow_loss = self.model(x[..., i_step], c[..., i_step])
+                #                 if i_step == 0:
+                #                     zs_history.append(zs)
+                #                     self.model.module.multi_lstms.init_hidden()
+                #                     continue
                                 
-                                zs_pred, normals = self.model.module.prior(zs_history)
-                                zs_history.append(zs)
-                                nn_loss = self.model.module.nn_loss(normals, zs)
-                                total_loss = glow_loss + nn_loss
-                                loss_val += (total_loss / len(x))
+                #                 zs_pred, normals = self.model.module.prior(zs_history)
+                #                 zs_history.append(zs)
+                #                 nn_loss = self.model.module.nn_loss(normals, zs)
+                #                 total_loss = glow_loss + nn_loss
+                #                 loss_val += (total_loss / len(x))
                                            
-                        n_batches += 1
-                    loss_val /= n_batches  
-                    self.writer.add_scalar("val_loss", loss_val, self.global_step)
+                #         n_batches += 1
+                #     loss_val /= n_batches  
+                #     self.writer.add_scalar("val_loss", loss_val, self.global_step)
 
-                # test samples generation
-                if self.global_step % self.test_log_gaps == 0:
-                    z_sample = []
-                    z_shapes = calc_z_shapes(3, self.cfg.Data.seqlen, self.cfg.Glow.L)
+                # # test samples generation
+                # if self.global_step % self.test_log_gaps == 0:
+                #     z_sample = []
+                #     z_shapes = calc_z_shapes(3, self.cfg.Data.seqlen, self.cfg.Glow.L)
 
-                    for z in z_shapes:
-                        z_new = torch.randn(1, *z)
-                        z_sample.append(z_new.to(self.device))
+                #     for z in z_shapes:
+                #         z_new = torch.randn(1, *z)
+                #         z_sample.append(z_new.to(self.device))
+                    
+                #     test_batch = next(iter(self.test_data_loader))
+                #     c = test_batch["controls"].to(self.device)
+                #     c_sample = c[..., 0]
+                #     self.model.module.multi_lstms.init_hidden()
+                #     y = self.model(z_sample, c_sample, reverse=True)
+                    
                                         
                 self.global_step += 1 
                 

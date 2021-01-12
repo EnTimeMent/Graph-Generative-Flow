@@ -17,7 +17,7 @@
 
     "Optim": {
         "name": "adam",
-        "lr": 1e-4,
+        "lr": 1e-6,
         "betas": [0.9, 0.999],
         "eps": 1e-8
     },
@@ -35,19 +35,19 @@
         "reverse_time": false,
         "shuffle": true,
         "seqlen": 16,
-        "overlap": 1
+        "overlap": 8
     },
 
     "Train": {
         "batch_size": 100,
         "num_epochs": 10000,
         "log": "results/locomotion",
-        "check_gap": 1,
+        "check_gap": 1000,
         "max_grad_clip": 5,
         "max_grad_norm": 100,
         "num_workers": 4,
         "scalar_log_gap": 50,
-        "validation_log_gap": 1,
-        "test_log_gap": 1
+        "validation_log_gap": 1000,
+        "test_log_gap": 1000
     }
 }

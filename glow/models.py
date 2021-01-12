@@ -147,10 +147,10 @@ class Glow(nn.Module):
         
         self.blocks = nn.ModuleList()
         self.in_channels = cfg.Glow.in_channels
-        self.multi_lstms = Multi_LSTMs(num_channels=self.in_channels,
-                                       num_joints=21,
-                                       L=self.L,
-                                       num_layers=2)
+        # self.multi_lstms = Multi_LSTMs(num_channels=self.in_channels,
+        #                                num_joints=21,
+        #                                L=self.L,
+        #                                num_layers=2)
         
         for i in range(self.L):
             split = i < (self.L - 1)
@@ -167,21 +167,21 @@ class Glow(nn.Module):
                           LU_decomposed=cfg.Glow.LU_decomposed)
             self.blocks.append(block)
     
-    def prior(self, zs_history):
-        # self.multi_lstms()
-        length = len(zs_history)
-        L = len(zs_history[0])
-        zs_pred = []
+    # def prior(self, zs_history):
+    #     # self.multi_lstms()
+    #     length = len(zs_history)
+    #     L = len(zs_history[0])
+    #     zs_pred = []
 
-        # for i_level in range(L):
-        #     sequence = []
-        #     for i_step in range(length):
-        #         sequence.append(zs_history[i_step][i_level])
+    #     # for i_level in range(L):
+    #     #     sequence = []
+    #     #     for i_step in range(length):
+    #     #         sequence.append(zs_history[i_step][i_level])
             
-        zs = zs_history[-1]
-        zs_pred, normals = self.multi_lstms(zs)
+    #     zs = zs_history[-1]
+    #     zs_pred, normals = self.multi_lstms(zs)
         
-        return zs_pred, normals
+    #     return zs_pred, normals
     
     def forward(self, x, cond, logdet=None, reverse=False):
         if not reverse:
@@ -224,11 +224,11 @@ class Glow(nn.Module):
     def generative_loss(self, nll):
         return torch.mean(nll)
     
-    def nn_loss(self, normals, zs):
-        L = len(normals)
-        sum_loss = 0
-        for i in range(L):
-            loss = normals[i].log_prob(zs[i])
-            sum_loss += torch.mean(loss)
+    # def nn_loss(self, normals, zs):
+    #     L = len(normals)
+    #     sum_loss = 0
+    #     for i in range(L):
+    #         loss = normals[i].log_prob(zs[i])
+    #         sum_loss += torch.mean(loss)
         
-        return -sum_loss
+    #     return -sum_loss
