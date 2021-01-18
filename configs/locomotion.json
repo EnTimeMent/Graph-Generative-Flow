@@ -5,7 +5,7 @@
         "K": 2,
         "L": 2,
         "joints": 21,
-        "length": 8,
+        "length": 4,
         "actnorm_scale": 1.0, 
         "flow_permutation": "invconv", 
         "flow_coupling": "affine", 
@@ -17,7 +17,7 @@
 
     "Optim": {
         "name": "adam",
-        "lr": 1e-6,
+        "lr": 1e-4,
         "betas": [0.9, 0.999],
         "eps": 1e-8
     },
