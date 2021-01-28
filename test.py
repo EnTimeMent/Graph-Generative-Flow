@@ -41,8 +41,8 @@ if __name__ == "__main__":
     # x1 = B(out, z, reverse=True)
     
     # test glows
-    x0 = torch.randn([2, 3, 21, 16])
-    cond0 = torch.randn([2, 3, 16])
+    x0 = torch.randn([2, 3, 21, 4])
+    cond0 = torch.randn([2, 3, 4])
     args = parser.parse_args()
     cfg = JsonConfig(args.cfg)
     model = Glow(cfg)

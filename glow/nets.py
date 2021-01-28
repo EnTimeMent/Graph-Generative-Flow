@@ -20,13 +20,13 @@ class STGCN(nn.Module):
         self.register_buffer('A', A)
         
         spatial_kernel_size = A.size(0)
-        temporal_kernel_size = 9
+        temporal_kernel_size = 5
         
         kernel_size = (temporal_kernel_size, spatial_kernel_size)
         
         self.gcn_networks = nn.ModuleList((
-            st_gcn(input_dim, hidden_dim, kernel_size, cond_res=True),
-            st_gcn(hidden_dim, hidden_dim, kernel_size)
+            st_gcn(input_dim, hidden_dim, kernel_size),
+            # st_gcn(hidden_dim, hidden_dim, kernel_size)
         ))
     
         if edge_importance_weighting:

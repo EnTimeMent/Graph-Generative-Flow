@@ -3,9 +3,9 @@
         "in_channels": 3,
         "hidden_channels": 32, 
         "K": 2,
-        "L": 2,
+        "L": 1,
         "joints": 21,
-        "length": 8,
+        "length": 16,
         "actnorm_scale": 1.0, 
         "flow_permutation": "invconv", 
         "flow_coupling": "affine", 
@@ -17,15 +17,15 @@
 
     "Optim": {
         "name": "adam",
-        "lr": 1e-6,
+        "lr": 1e-4,
         "betas": [0.9, 0.999],
         "eps": 1e-8
     },
 
     "Schedule": {
         "name": "noam",
-        "warmup": 40000,
-        "minimum": 1e-6
+        "warmup": 1000,
+        "minimum": 1e-4
     },
     
     "Data": {

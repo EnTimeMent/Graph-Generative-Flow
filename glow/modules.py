@@ -30,16 +30,16 @@ class ActNorm(nn.Module):
     
     def initialize_bias(self, x):
         with torch.no_grad():
-            bias = torch.mean(x, dim=[0, 2, 3], keepdim=True) * -1.0
+            bias = torch.mean(x.clone(), dim=[0, 2, 3], keepdim=True) * -1.0
             self.bias.data.copy_(bias.data)
         
     def initialize_logs(self, x):
         with torch.no_grad():
-            vars = torch.mean((x+self.bias) ** 2, dim=[0, 2, 3], keepdim=True)
-            logs = torch.log(self.scale/(torch.sqrt(vars)+1e-6))
-            # std = torch.std(x, dim=[0, 2, 3], keepdim=True)
-            # scale = self.scale / (std+1e-6)
-            # logs = torch.log(scale)
+            # vars = torch.mean((x.clone()+self.bias) ** 2, dim=[0, 2, 3], keepdim=True)
+            # logs = torch.log(self.scale/(torch.sqrt(vars)+1e-6))
+            std = torch.std(x.clone(), dim=[0, 2, 3], keepdim=True)
+            scale = self.scale / (std+1e-6)
+            logs = torch.log(scale)
             self.logs.data.copy_(logs.data)
     
     def _scale(self, x, logdet=None, reverse=False):
