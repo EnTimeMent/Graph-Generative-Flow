@@ -4,7 +4,7 @@ import numpy as np
 def default(init_lr, global_step):
     return init_lr
 
-def noam_learning_rate_decay(init_lr, global_step, warmup_steps=4000, minimum=None):
+def noam_learning_rate_decay(init_lr, global_step, warmup_steps=1000, minimum=None):
     warmup_steps = float(warmup_steps)
     step = global_step + 1.
     lr = init_lr * warmup_steps**0.5 * np.minimum(

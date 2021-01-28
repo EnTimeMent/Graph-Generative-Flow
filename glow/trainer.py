@@ -40,6 +40,8 @@ class Trainer(object):
         self.optim = optim
         self.schedule = schedule
         self.init_lr = cfg.Optim.lr
+        self.warmup_steps = cfg.Schedule.warmup
+        self.minimum = cfg.Schedule.minimum
 
         self.max_grad_clip = cfg.Train.max_grad_clip
         self.max_grad_norm = cfg.Train.max_grad_norm
@@ -84,7 +86,7 @@ class Trainer(object):
                 self.model.train()
                 
                 # update learning rate
-                lr = self.schedule(init_lr=self.init_lr, global_step=self.global_step)
+                lr = self.schedule(init_lr=self.init_lr, global_step=self.global_step, warmup_steps=self.warmup_steps, minimum=self.minimum)
                 for param_group in self.optim.param_groups:
                     param_group['lr'] = lr
                 
@@ -136,8 +138,8 @@ class Trainer(object):
                         torch.nn.utils.clip_grad_value_(self.model.parameters(), self.max_grad_clip)
                     if self.max_grad_norm is not None and self.max_grad_norm > 0:
                         grad_norm = torch.nn.utils.clip_grad_norm_(self.model.parameters(), self.max_grad_norm)
-                        # if self.global_step % self.scalar_log_gaps == 0:
-                        #     self.writer.add_scalar("grad_norm", grad_norm, self.global_step)
+                        if self.global_step % self.scalar_log_gaps == 0:
+                            self.writer.add_scalar("grad_norm", grad_norm, self.global_step)
                     
                     # step
                     self.optim.step()
@@ -200,7 +202,8 @@ class Trainer(object):
                     z_shapes = calc_z_shapes(3, self.cfg.Data.seqlen, self.cfg.Glow.L)
 
                     for z in z_shapes:
-                        z_new = torch.randn(1, *z)
+                        z_new = torch.normal(mean=torch.zeros(*z), std=torch.ones(*z)).unsqueeze(0)
+# torch.randn(1, *z)    z_new =
                         z_sample.append(z_new.to(self.device))
                     
                     test_batch = next(iter(self.test_data_loader))

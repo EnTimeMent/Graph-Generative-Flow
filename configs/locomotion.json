@@ -1,11 +1,11 @@
 {
     "Glow": {
         "in_channels": 3,
-        "hidden_channels": 32, 
-        "K": 2,
+        "hidden_channels": 512, 
+        "K": 3,
         "L": 1,
         "joints": 21,
-        "length": 16,
+        "length": 3,
         "actnorm_scale": 1.0, 
         "flow_permutation": "invconv", 
         "flow_coupling": "affine", 
@@ -17,7 +17,7 @@
 
     "Optim": {
         "name": "adam",
-        "lr": 1e-4,
+        "lr": 1e-3,
         "betas": [0.9, 0.999],
         "eps": 1e-8
     },
@@ -25,7 +25,7 @@
     "Schedule": {
         "name": "noam",
         "warmup": 1000,
-        "minimum": 1e-4
+        "minimum": 1e-5
     },
     
     "Data": {
