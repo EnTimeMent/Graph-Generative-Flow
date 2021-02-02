@@ -198,27 +198,30 @@ class Trainer(object):
 
                 # test samples generation
                 if self.global_step % self.test_log_gaps == 0:
-                    z_sample = []
-                    z_shapes = calc_z_shapes(3, self.cfg.Data.seqlen, self.cfg.Glow.L)
+                    loader = iter(self.test_data_loader)
+                    for sample_index in range(5):
+                        z_sample = []
+                        z_shapes = calc_z_shapes(3, self.cfg.Data.seqlen, self.cfg.Glow.L)
 
-                    for z in z_shapes:
-                        z_new = torch.normal(mean=torch.zeros(*z), std=torch.ones(*z)).unsqueeze(0)
-# torch.randn(1, *z)    z_new =
-                        z_sample.append(z_new.to(self.device))
-                    
-                    test_batch = next(iter(self.test_data_loader))
-                    c = test_batch["controls"].to(self.device)
-                    c_sample = c[..., 0]
-                    # self.model.module.multi_lstms.init_hidden()
-                    y = self.model(z_sample, c_sample, reverse=True)
-                    
-                    clip = torch.cat((y, c_sample.unsqueeze(2)), 2).permute(0, 3, 1, 2).cpu().numpy()
-                    clip = clip.reshape(clip.shape[0], clip.shape[1], clip.shape[2]*clip.shape[3])
-                    clip = inv_standardize(clip, self.data.scaler)
-                    
-                    _clip_name = "test_{}.mp4".format(int(self.global_step))
-                    clip_path = os.path.join(self.plot_dir, _clip_name)  
-                    plot_animation(clip[0], self.data.parents, clip_path, self.data.frame_rate, axis_scale=60)                        
+                        for z in z_shapes:
+                            z_new = torch.normal(mean=torch.zeros(*z), std=torch.ones(*z)).unsqueeze(0)
+    # torch.randn(1, *z)    z_new =
+                            z_sample.append(z_new.to(self.device))
+                        
+                        test_batch = next(loader)
+                        c = test_batch["controls"].to(self.device)
+                        c_sample = c[..., 0]
+                        
+                        # self.model.module.multi_lstms.init_hidden()
+                        y = self.model(z_sample, c_sample, reverse=True)
+                        
+                        clip = torch.cat((y, c_sample.unsqueeze(2)), 2).permute(0, 3, 1, 2).cpu().numpy()
+                        clip = clip.reshape(clip.shape[0], clip.shape[1], clip.shape[2]*clip.shape[3])
+                        clip = inv_standardize(clip, self.data.scaler)
+                        
+                        _clip_name = "test1_{}_{}.mp4".format(int(self.global_step), int(sample_index))
+                        clip_path = os.path.join(self.plot_dir, _clip_name)  
+                        plot_animation(clip[0], self.data.parents, clip_path, self.data.frame_rate, axis_scale=60)                        
                     
                 self.global_step += 1 
                 

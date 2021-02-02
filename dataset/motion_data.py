@@ -27,6 +27,7 @@ class MotionDataset(Dataset):
             samples.append(sample)
             i = i + self.overlap
         samples = np.array(samples)
+        # samples = np.concatenate(samples, 0)
         return samples
     
     def __len__(self):

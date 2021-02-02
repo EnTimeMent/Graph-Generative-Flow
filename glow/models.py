@@ -98,7 +98,9 @@ class Block(nn.Module):
             
             if self.split:
                 out, z = z.chunk(2, 1)
-                mean, logsd = self.prior(out).chunk(2, 1)
+                zero = torch.zeros_like(out)
+                mean, logsd = self.prior(zero).chunk(2, 1)
+                # mean, logsd = self.prior(out).chunk(2, 1)
                 logp = self.logp(z, mean, logsd)
             else:
                 zero = torch.zeros_like(z)
@@ -128,6 +130,7 @@ class Block(nn.Module):
         device = x.device
         log2PI = torch.log(2 * torch.tensor(math.pi)).to(device)
         return -0.5 * (log2PI -logsd + (x-mean)**2) / torch.exp(2*logsd)
+        # return -0.5 * (log2PI + (x)**2)
 
     @staticmethod
     def logp(x, mean, logsd):
@@ -150,8 +153,7 @@ class Glow(nn.Module):
         # self.multi_lstms = Multi_LSTMs(num_channels=self.in_channels,
         #                                num_joints=21,
         #                                L=self.L,
-        #                                num_layers=2)
-        
+        #                                num_layers=2)        
         for i in range(self.L):
             split = i < (self.L - 1)
             block = Block(in_channels=self.in_channels,
@@ -198,8 +200,7 @@ class Glow(nn.Module):
                     logp_sum = logp_sum + logp
             
             nll = self.negative_log_likelihood(logdet, logp_sum)
-            glow_loss = self.generative_loss(nll)
-            
+            glow_loss = self.generative_loss(nll)            
             # zs_pred, normals = self.multi_lstms(zs)
 
             return logp_sum, logdet_sum, zs , glow_loss

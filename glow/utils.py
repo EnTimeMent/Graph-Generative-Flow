@@ -146,6 +146,23 @@ class Conv2dZeros(nn.Conv2d):
         out = super().forward(x)
         return out * torch.exp(self.logs * self.logscale_factor)
 
+# from torch.nn import functional as F
+# class Conv2dZeros(nn.Module):
+#     def __init__(self, in_channels, out_channels):
+#         super().__init__()
+        
+#         self.zeroConv2d = nn.Conv2d(in_channels, out_channels, kernel_size=3, padding=0)
+#         self.zeroConv2d.weight.data.zero_()
+#         self.zeroConv2d.bias.data.zero_()
+#         self.scale = nn.Parameter(torch.zeros(1, out_channels, 1, 1))
+
+#     def forward(self, x):
+#         out = F.pad(x, [1, 1, 1, 1], 'constant', value=1)
+#         out = self.zeroConv2d(out)
+#         out *= torch.exp(3 * self.scale)
+        
+#         return out
+
 
 class GraphConvolution(nn.Module):
     def __init__(self, in_channels, out_channels, kernel_size,

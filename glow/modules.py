@@ -146,7 +146,7 @@ class InvertibleConv1x1(nn.Module):
                 if logdet is not None:
                     logdet = logdet - dlogdet
                 else:
-                    logdet = dlogdet
+                    logdet = -dlogdet
                 return y
 
 
@@ -195,11 +195,11 @@ class AffineCoupling(nn.Module):
             
             # step 2
             # x1, x2 = split_feature(y, 'split')
-            h = self.net(x2, cond2)
-            shift, scale = split_feature(h, "cross")
-            scale = torch.sigmoid(scale + 2.) + 1e-6
-            x1 = (x1 + shift) * scale
-            y = torch.cat([x1, x2], 1)
+            # h = self.net(x2, cond2)
+            # shift, scale = split_feature(h, "cross")
+            # scale = torch.sigmoid(scale + 2.) + 1e-6
+            # x1 = (x1 + shift) * scale
+            # y = torch.cat([x1, x2], 1)
             
             logdet = torch.sum(torch.log(scale), dim=[1, 2, 3]) + logdet
             return y, logdet
@@ -209,10 +209,10 @@ class AffineCoupling(nn.Module):
             
             # step 1
             x1, x2 = split_feature(x, "split")
-            h = self.net(x2, cond2)
-            shift, scale = split_feature(h, "cross")
-            scale = torch.sigmoid(scale + 2.) + 1e-6
-            x1 = x1 / scale - shift
+            # h = self.net(x2, cond2)
+            # shift, scale = split_feature(h, "cross")
+            # scale = torch.sigmoid(scale + 2.) + 1e-6
+            # x1 = x1 / scale - shift
             # x = torch.cat([x1, x2], 1)
             
             # step 2
