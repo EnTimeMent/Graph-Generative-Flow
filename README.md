@@ -24,8 +24,18 @@ Thanks for Gustav Eje Henter, Simon Alexanderson, and Jonas Beskow originally sh
 
 ## Methods
 
-We use a spatial convolutional network in the affine coupling layer to extract skeleton features. The conditioning information include the past poses. All these are concatenated as one vector in MoGlow. We use a spatial temporal convolution networks to extract the features of past sequence. To reconstruct the missing data, we first generate future poses, then reverse the generated poses and control signals. Regarding the reversed sequences as control information to generate markers to fill the holes of the missing data. 
+We find when we provide the whole past sequence but some body markers are missing, we can observe that some joints may fly apart. This situation happens occasionally.  
+
+![network](https://github.com/YIN95/Graph-Generative-Flow/blob/main/media/image11.gif)
+
+We use a spatial convolutional network in the affine coupling layer to extract skeleton features. The conditioning information include the past poses. All these are concatenated as one vector in MoGlow. We use a spatial temporal convolution networks to extract the features of past sequence. 
 
 ![network](https://github.com/YIN95/Graph-Generative-Flow/blob/main/media/image17.png)
 
+![network](https://github.com/YIN95/Graph-Generative-Flow/blob/main/media/image16.gif)
+
+
+To reconstruct the missing data, we first generate future poses, then reverse the generated poses and control signals. Regarding the reversed sequences as control information to generate markers to fill the holes of the missing data. 
+
+![network](https://github.com/YIN95/Graph-Generative-Flow/blob/main/media/image4.gif)
 
