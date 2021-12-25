@@ -16,12 +16,6 @@ If this code helps with your work, please cite:
 }
 ```
 
-## Dataset
-
-The data is pooled from the Edinburgh Locomotion, CMU Motion Capture, and HDM05 datasets.
-Thanks for Gustav Eje Henter, Simon Alexanderson, and Jonas Beskow originally sharing the data [here](https://github.com/simonalexanderson/StyleGestures).
-
-
 ## Methods
 
 We find when we provide the whole past sequence but some body markers are missing, we can observe that some joints may fly apart. This situation happens occasionally.  
@@ -39,3 +33,7 @@ To reconstruct the missing data, we first generate future poses, then reverse th
 
 ![network](https://github.com/YIN95/Graph-Generative-Flow/blob/main/media/image4.gif)
 
+## Dataset
+
+The data is pooled from the Edinburgh Locomotion, CMU Motion Capture, and HDM05 datasets.
+Thanks for Gustav Eje Henter, Simon Alexanderson, and Jonas Beskow originally sharing the data [here](https://github.com/simonalexanderson/StyleGestures).
