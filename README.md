@@ -20,7 +20,7 @@ If this code helps with your work, please cite:
 
 We find when we provide the whole past sequence but some body markers are missing, we can observe that some joints may fly apart. This situation happens occasionally.  
 
-![network](https://github.com/YIN95/Graph-Generative-Flow/blob/main/media/image11.gif)
+![network](https://https://github.com/EnTimeMent/Graph-Generative-Flow/media/image11.gif)
 
 We use a spatial convolutional network in the affine coupling layer to extract skeleton features. The conditioning information include the past poses. All these are concatenated as one vector in MoGlow. We use a spatial temporal convolution networks to extract the features of past sequence. 
 
